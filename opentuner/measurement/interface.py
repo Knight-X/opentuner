@@ -8,8 +8,28 @@ import re
 import signal
 import subprocess
 import threading
-import time
+import ctypes
 from multiprocessing.pool import ThreadPool
+
+__all__ = ["monotonic_time"]
+
+CLOCK_MONOTONIC_RAW = 4 #see <linux/time.h>
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+            ('tv_sec', ctypes.c_long),
+            ('tv_nsec', ctypes.c_long)
+    ]
+librt = ctypes.CDLL('librt.so.1', use_errno=True)
+clock_gettime = librt.clock_gettime
+clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+
+def monotonic_time():
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC_RAW, ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t.tv_sec + t.tv_nsec * 1e-9
 
 try:
   import resource
@@ -197,7 +217,7 @@ class MeasurementInterface(object):
     if type(cmd) in (str, unicode):
       kwargs['shell'] = True
     killed = False
-    t0 = time.time()
+    t0 = monotonic_time()
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          preexec_fn=preexec_setpgid_setrlimit(memory_limit),
                          **kwargs)
@@ -212,13 +232,13 @@ class MeasurementInterface(object):
       while p.returncode is None:
         if limit is None:
           goodwait(p)
-        elif limit and time.time() > t0 + limit:
+        elif limit and monotonic_time() > t0 + limit:
           killed = True
           goodkillpg(p.pid)
           goodwait(p)
         else:
           # still waiting...
-          sleep_for = limit - (time.time() - t0)
+          sleep_for = limit - (monotonic_time() - t0)
           if not stdout_result.ready():
             stdout_result.wait(sleep_for)
           elif not stderr_result.ready():
@@ -238,7 +258,7 @@ class MeasurementInterface(object):
         self.pids.remove(p.pid)
       self.pid_lock.release()
 
-    t1 = time.time()
+    t1 = monotonic_time()
     return {'time': float('inf') if killed else (t1 - t0),
             'timeout': killed,
             'returncode': p.returncode,
