@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import adddeps  # fix sys.path
-
+import pickle
 import math
 import argparse
 import ast
@@ -28,7 +28,7 @@ log = logging.getLogger('gccflags')
 argparser = argparse.ArgumentParser(parents=opentuner.argparsers())
 argparser.add_argument('source', help='source file to compile')
 argparser.add_argument('--compile-template',
-                       default='{cc} {source} -o {output} -lpthread {flags}',
+                       default='make EXEC={output} TUNE="{flags}"',
                        help='command to compile {source} into {output} with'
                             ' {flags}')
 argparser.add_argument('--compile-limit', type=float, default=30,
@@ -87,6 +87,7 @@ class GccFlagsTuner(opentuner.measurement.MeasurementInterface):
     log.info("baseline perfs -O0=%.4f -O1=%.4f -O2=%.4f -O3=%.4f",
              *[self.run_with_flags(['-O%d' % i], None).time
                for i in range(4)])
+    log.info("-Ofast=%.4f", *[self.run_with_flags(['-Ofast'], None).time])
 
   def extract_gcc_version(self):
     m = re.search(r'([0-9]+)[.]([0-9]+)[.]([0-9]+)', subprocess.check_output([
@@ -106,6 +107,9 @@ class GccFlagsTuner(opentuner.measurement.MeasurementInterface):
     if os.path.isfile(FLAGS_WORKING_CACHE_FILE) and not args.no_cached_flags:
       # use cached version
       found_cc_flags = json.load(open(FLAGS_WORKING_CACHE_FILE))
+      print("FOUND")
+      f = open('x.txt', 'wb')
+      json.dump(found_cc_flags, f)
     else:
       # extract flags from --help=optimizers
       optimizers, err = subprocess.Popen([self.args.cc, '--help=optimizers'],
