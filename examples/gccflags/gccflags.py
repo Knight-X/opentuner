@@ -84,7 +84,8 @@ class GccFlagsTuner(opentuner.measurement.MeasurementInterface):
     self.run_baselines()
 
   def run_baselines(self):
-    log.info("baseline perfs -O0=%.4f -O1=%.4f -O2=%.4f -O3=%.4f",
+    log.critical('fuck fuck')
+    log.critical("baseline perfs -O0=%.4f -O1=%.4f -O2=%.4f -O3=%.4f",
              *[self.run_with_flags(['-O%d' % i], None).time
                for i in range(4)])
     log.info("-Ofast=%.4f", *[self.run_with_flags(['-Ofast'], None).time])

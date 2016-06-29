@@ -338,6 +338,7 @@ def get_enabled(args):
     for t in techniques:
       print t.name
     sys.exit(0)
+  print techniques
 
   if not args.technique:
     # no techniques specified, default technique
