@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import dateparser
+from datetime import datetime
 
 def connect(name):
     create = not os.path.exists(name)
@@ -46,29 +47,34 @@ def group(items):
             oldmin = newmin
     result.append(temp)
     return result
+
 def min_item(items):
     result = []
-    minimum = 5 
+    temp = []
+    t_min = 400 
     for item in items:
         sinmin = min(item)
-        if (sinmin < minimum):
-            minimum = sinmin
-            result.append(sinmin)
-        else:
-            result.append(minimum)
-    return result
+        temp.append(sinmin)
 
+    for r in temp:
+        if (r < t_min):
+            t_min = r
+            result.append(r)
+        else:
+            result.append(t_min)
+    return result
 def avg(items):
     result = []
     for item in items:
-        sinavg = min(item)
+        print(item)
+        sinavg = float(sum(item) / float(len(item)))
         result.append(sinavg)
     return result
 def cleandata(datas):
     nitems = []
     for i in datas:
         if i[0] != 'inf':
-            dat = dateparser.parse(i[1])
+            dat = datetime.strptime(i[1], '%Y-%m-%d %H:%M:%S.%f')
             minute = dat.minute
             nitems.append([minute, float(i[0])])
     
